@@ -1,0 +1,87 @@
+version: '3'
+
+services:
+  Frontend:
+    build:
+      context: ./Frontend
+    container_name: frontend
+    ports:
+      - "80:3000"
+    volumes:
+      - frontend_data:/app
+    depends_on:
+      - Backend
+    networks:
+      - app-network
+
+  Backend:
+    build:
+      context: ./Backend
+    container_name: backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - backend_data:/app
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
+
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "admin"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - app-network
+    depends_on:
+      - prometheus
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    ports:
+      - "8081:8080"
+    volumes:
+      - jenkins_data:/var/jenkins_home
+    networks:
+      - app-network
+
+volumes:
+  frontend_data:
+    driver: local
+  backend_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  jenkins_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
